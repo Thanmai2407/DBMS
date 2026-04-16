@@ -48,7 +48,7 @@ export default function Dashboard() {
               {a.account_type === 'VAULT' && a.vault_target_amount && (
                 <div style={{ fontSize:11, color:'#7c3aed' }}>🎯 Goal: ₹{parseFloat(a.vault_target_amount).toLocaleString()}</div>
               )}
-              <div style={{ fontSize:11, color:'#9ca3af', marginTop:4 }}>{a.account_id.substring(0,12)}...</div>
+              <div style={{ fontSize:11, color:'#9ca3af', marginTop:4 }}>{a.account_id}</div>
             </div>
           ))}
         </div>

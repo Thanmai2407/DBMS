@@ -23,6 +23,18 @@ router.get('/', auth, async (req, res) => {
 
 router.post('/transfer', auth, idempotency, async (req, res) => {
   const { from_account_id, to_account_id, amount, description } = req.body;
+  
+  if (!amount || isNaN(amount) || amount <= 0) {
+    return res.status(400).json({ error: 'Invalid transfer amount' });
+  }
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!to_account_id || !uuidRegex.test(to_account_id)) {
+    return res.status(400).json({ error: 'Valid recipient account ID (UUID) is required' });
+  }
+  if (from_account_id === to_account_id) {
+    return res.status(400).json({ error: 'Cannot transfer to the same account' });
+  }
+
   try {
     const tx = await executeTransfer({
       fromAccountId: from_account_id,
@@ -38,6 +50,9 @@ router.post('/transfer', auth, idempotency, async (req, res) => {
 
 router.post('/deposit', auth, async (req, res) => {
   const { account_id, amount, description } = req.body;
+  if (!amount || isNaN(amount) || amount <= 0) {
+    return res.status(400).json({ error: 'Invalid deposit amount' });
+  }
   try {
     const tx = await deposit(account_id, parseFloat(amount), description, req.user.customer_id);
     res.json({ success: true, transaction: tx });

@@ -50,7 +50,7 @@ async function executeTransfer({
     // Lock both rows in deterministic order to prevent deadlock
     const [first, second] = [fromAccountId, toAccountId].sort();
     await db.query('SELECT 1 FROM balance_cache WHERE account_id=$1 FOR UPDATE', [first]);
-    await db.query('SELECT 1 FROM balance_cache WHERE account_id=$2 FOR UPDATE', [second]);
+    await db.query('SELECT 1 FROM balance_cache WHERE account_id=$1 FOR UPDATE', [second]);
 
     // Verify balance
     const balRes = await db.query(
@@ -58,6 +58,14 @@ async function executeTransfer({
     );
     if (!balRes.rows.length || parseFloat(balRes.rows[0].balance) < amount) {
       throw new Error(`Insufficient funds. Available: ₹${balRes.rows[0]?.balance || 0}`);
+    }
+
+    // Verify recipient exists
+    const toAccRes = await db.query(
+      'SELECT 1 FROM balance_cache WHERE account_id=$1', [toAccountId]
+    );
+    if (!toAccRes.rows.length) {
+      throw new Error('Recipient account not found');
     }
 
     // Debit
@@ -143,7 +151,7 @@ async function checkBudgetAlert(db, accountId, category, amount) {
 
     let msg = null;
     if (pct >= 110)
-      msg = `🚨 You exceeded your ${category} budget by ${(pct-100).toFixed(0)}%`;
+      msg = `🚨 You exceeded your ${category} budget by ${(pct - 100).toFixed(0)}%`;
     else if (pct >= 100)
       msg = `🔴 You hit your ${category} budget limit of ₹${limit}`;
     else if (pct >= parseFloat(budget.rows[0].alert_threshold))
